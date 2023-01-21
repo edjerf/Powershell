@@ -1,4 +1,18 @@
-<# .SYNOPSIS - .DESCRIPTION - .PARAMETER - .EXAMPLE - .NOTES Name : Verb-Noun Author : Author #>
+<# 
+.SYNOPSIS
+
+.DESCRIPTION
+
+.PARAMETER
+
+.EXAMPLE
+
+.NOTES
+Name   : Verb-Noun 
+Author : Author
+.LINK
+
+#>
 function Verb-Noun
 {
     [CmdletBinding()]
