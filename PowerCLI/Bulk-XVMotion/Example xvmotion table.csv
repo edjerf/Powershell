@@ -1,0 +1,6 @@
+VMName,Application,SourceVC,TargetVC,TargetFolder,TargetCluster,TargetDatastore,TargetSwitch,TargetPortgroup,SwitchType
+vmxvmotion01,Test bogus application name,sourceVCName,targetVCName,vmFolder,test_cl1,tst_cl1_dscluster,test_DC,vlan109_it_applications,vds
+vmxvmotion02,Test bogus application name,sourceVCName,targetVCName,vmFolder,test_cl1,tst_cl1_dscluster,test_DC,vlan109_it_applications,vds
+vmxvmotion03,Test bogus application name,sourceVCName,targetVCName,vmFolder,test_cl1,tst_cl1_dscluster,test_DC,"vlan109_it_applications,vlan108_backup",vds
+vmxvmotion04,Test bogus application name,sourceVCName,targetVCName,vmFolder,test_cl1,tst_cl1_dscluster,test_DC,vlan109_it_applications,vds
+vmxvmotion05,Test bogus application name,sourceVCName,targetVCName,vmFolder,test_cl1,tst_cl1_dscluster,test_DC,vlan109_it_applications,vds
