@@ -1,3 +1,5 @@
+function Verb-Noun
+{
 <# 
 .SYNOPSIS
 
@@ -13,8 +15,6 @@ Author : Author
 .LINK
 
 #>
-function Verb-Noun
-{
     [CmdletBinding()]
     PARAM
     (
