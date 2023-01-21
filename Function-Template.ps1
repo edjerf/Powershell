@@ -15,7 +15,7 @@ function Verb-Noun
             Mandatory=$false,
             ValueFromPipeline=$true,
           ValueFromPipelineByPropertyName=$true)]
-        [Int]$FreeBuffer=20, # This is an optional integer variable
+        [Int]$FreeBuffer=20 # This is an optional integer variable
     )
     BEGIN
     {
@@ -36,3 +36,4 @@ function Verb-Noun
     END
     {
     }
+}
