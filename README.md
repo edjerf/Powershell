@@ -1,2 +1,2 @@
 # Powershell
-Misc powershell - snippets, templates, etc.
+Misc powershell - snippets, templates, etc. Mostly PowerCLI related.
