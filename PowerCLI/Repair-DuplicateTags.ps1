@@ -49,7 +49,7 @@ function Repair-DuplicateTags {
 
 
     process {
-            # Encapsulate in for loop to handle both pipeline and paramater input
+        # Encapsulate in for loop to handle both pipeline and paramater input
         foreach ($tagC in $TagCategory) {
 
             # Find all tags with duplicates - Get all tags and group them by Name. We should recieve one per connected
@@ -62,9 +62,9 @@ function Repair-DuplicateTags {
                 return
             }
 
-            # Load all tag assignments for category into memory for quick lookup
-            $tagAssignmentList = Get-TagAssignment -Category $tagc
-
+            # Load all tag assignments for category and name into memory for quick lookup
+            $tagAssignmentList = Get-TagAssignment -Category $tagc -Tag $duplicateGroups.Values -Server $global:DefaultVIServers
+            
             foreach ($duplicateGroup in $duplicateGroups) {
                 $tagObjects = $duplicateGroup.Group
                 # Do unique select on Tag Id property to identify the unique duplicate tag IDs, since in linked-mode
@@ -89,29 +89,39 @@ function Repair-DuplicateTags {
                 # With 'master' tag ID identified, iterate through each connected vCenter and identify tagAssignments
                 # within the tag 'group' (the group being the collection of tags with the same Name but differing IDs)
                 # and iteratively re-assign them.
-                foreach ($vCenter in $global:DefaultVIServers) {
-                    $masterTag = Get-Tag -Id $mostAssignmentsID -Server $vCenter
-                    # Identify tagAssignment objects which belong to this vCenter but do not match our 'master' ID
-                    $removeAssignments = $tagAssignmentList | Where-Object { $_.Tag.Uid.Contains($vCenter.Uid) -and $_.Tag.Id -ne $mostAssignmentsID -and $_.Tag.Name -eq $masterTag.Name }
-                    if ($removeAssignments) {
-                        foreach ($removal in $removeAssignments) {
-                            # Record existing entity, remove the old assignment, and add the new assignment
-                            $originalEntity = $removal.Entity
-                            if ( $PSCmdlet.ShouldProcess($originalEntity,"Reassign tag $($removal.Tag.Id)") ) {
-                                Remove-TagAssignment -TagAssignment $removal -Confirm:$false
-                                $newAssignment = New-TagAssignment -Tag $masterTag -Entity $originalEntity -Server $vCenter
-                                Write-Verbose "Moved entity $originalEntity from $($removal.Tag.Id) to $($newAssignment.Tag.Id)"
+                # If the number of assignments for this particular tag is zero, we can skip the re-assignment phase
+                if ($mostAssignments -ne 0) {
+                    foreach ($vCenter in $global:DefaultVIServers) {
+                        $masterTag = Get-Tag -Id $mostAssignmentsID -Server $vCenter
+                        # Identify tagAssignment objects which belong to this vCenter but do not match our 'master' ID
+                        $removeAssignments = $tagAssignmentList | Where-Object { $_.Tag.Uid.Contains($vCenter.Uid) -and $_.Tag.Id -ne $mostAssignmentsID -and $_.Tag.Name -eq $masterTag.Name }
+                        if ($removeAssignments) {
+                            foreach ($removal in $removeAssignments) {
+                                # Record existing entity, remove the old assignment, and add the new assignment
+                                $originalEntity = $removal.Entity
+                                if ( $PSCmdlet.ShouldProcess($originalEntity, "Reassign tag $($removal.Tag.Id)") ) {
+                                    Remove-TagAssignment -TagAssignment $removal -Confirm:$false
+                                    $newAssignment = New-TagAssignment -Tag $masterTag -Entity $originalEntity -Server $vCenter
+                                    Write-Verbose "Moved entity $originalEntity from $($removal.Tag.Id) to $($newAssignment.Tag.Id)"
+                                }
                             }
                         }
                     }
+                } else {
+                    # It is possible for the number of assignments to be zero - i.e. There are duplicate tags, but
+                    # they aren't assigned to anything. In this case, simply pick one of them to be the 'master'
+                    $mostAssignmentsID = $duplicateTagIDs | Select-Object -First 1
+                    $masterTag = Get-Tag -Id $mostAssignmentsID -Server $global:DefaultVIServers[0]
                 }
+
+
                 # Once all tagassignments have been fixed across all connected vCenters, any duplicate tag that is not 
                 # the 'master' may be safely deleted. Identify the tags to be deleted, verify there are no assignments,
                 # and if there aren't then delete them.
                 # Target only one vCenter for the actual tag Objects, the deletions will be replicated to the other vCenters
-                $tagsToDelete = Get-Tag -Category $tagc -Name $masterTag.Name -Server $global:DefaultVIServer | Where-Object { $_.Id -ne $mostAssignmentsID }
-            
-                $checkAssignments = Get-TagAssignment -Category $tagc
+                $tagsToDelete = Get-Tag -Category $tagc -Name $masterTag.Name -Server $global:DefaultVIServers[0] | Where-Object { $_.Id -ne $mostAssignmentsID }
+                
+                $checkAssignments = Get-TagAssignment -Category $tagc -Tag $masterTag.Name -Server $global:DefaultVIServers
                 foreach ($tag in $tagsToDelete) {
                     if ($PSCmdlet.ShouldProcess($tag.Id, 'Verify and delete') ) {
                         if ($checkAssignments.Tag.Id -notcontains $tag.Id) {
@@ -126,12 +136,15 @@ function Repair-DuplicateTags {
             }
         }
     }
-    
+
     end {
         
     }
 }
+    
 
-#Get-TagCategory | Select-Object -ExpandProperty Name -Unique | Repair-DuplicateTags -Verbose
-#Repair-DuplicateTags -TagCategory "Application"
+
+
+Get-TagCategory | Select-Object -ExpandProperty Name -Unique | Repair-DuplicateTags -Verbose
+#Repair-DuplicateTags -TagCategory "Application" -Verbose
 #Repair-DuplicateTags -TagCategory "TestCategory" -WhatIf -Verbose
